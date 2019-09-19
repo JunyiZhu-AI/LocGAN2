@@ -16,6 +16,10 @@ CONFIG = {}
 
 
 def init_or_restore(sess, saver, ckpt_dir):
+    '''
+    initial a network or restore the parameters from a checkpoint file.
+    :param saver: a record of parameter list
+    '''
     ckpt = tf.train.get_checkpoint_state(ckpt_dir)
     if ckpt and ckpt.model_checkpoint_path:
         # restore from checkpoint
@@ -36,11 +40,16 @@ def init_or_restore(sess, saver, ckpt_dir):
 
 
 def prepare_dataset():
+    '''
+    construct the input pipline. The datasets for training and test have been divided.
+    :return: iterator of the dataset
+    '''
     dataset, test_dataset = image_input(source_dir=CONFIG['dataset_dir'], with_gridmap=True,
                                         image_pattern=CONFIG['image_pattern'],
                                         gridmap_pattern=CONFIG['gridmap_pattern'])
     dataset = dataset.shuffle(5000).repeat()
     test_dataset = test_dataset.shuffle(5000).repeat()
+    # second step in input pipline, load images and preprocess them.
     dataset = dataset.map(load_image(img_pattern=CONFIG['image_pattern'], img_height=CONFIG['img_height'],
                                      img_width=CONFIG['img_width'], grayscale=CONFIG['grayscale'],
                                      augumentation=CONFIG['augumentation']),
