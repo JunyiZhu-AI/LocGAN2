@@ -1,0 +1,95 @@
+# input function arguments
+dataset_dir: /mrtstorage/users/zhu/dataset_main/dataset_new
+grayscale: True
+image_pattern: png
+gridmap_pattern: png
+augumentation: True
+num_parallel_calls: 4
+img_height: 320
+img_width: 320
+task_net_pos_weight: 1
+batch_size: 20
+gpu_fraction: 0.91
+
+
+# Arguments for test
+test:
+  load_list: True
+  generator_dir: ./gan_ckpt_new_data/generator
+  discriminator_dir: ./gan_ckpt_new_data/discriminator
+  gtn_dir: ./gtn_pos1_modified
+
+# Arguments for generator
+generator:
+  pos_weight: 1
+  resnet_version: v2
+  bottleneck: True
+  norm: batch
+  regular_scale: 0.0  #0.000001           #it has to be a double value
+  max_train_steps: 15000
+  lr: 0.00003         # learning rate
+  lr_decay: True
+  ckpt_to_keep: 3
+  ckpt_dir: ./generator_ckpt_new_data
+  concat_cond: True
+
+# Arguments for discriminator
+discriminator:
+  regular_scale: 0.00001
+  dense_unit: 128
+  norm: batch
+  max_train_steps: 10000
+  lr: 0.0001
+  lr_decay: True
+  ckpt_to_keep: 1
+  ckpt_dir: ./discriminator_new_data
+
+# Arguments for gan
+gan:
+  initial_gan: True
+  ckpt_dir: ./gan_ckpt_new_data
+  d_loss_weight: 100
+  max_train_steps: 500000
+  ckpt_to_keep: 5
+
+# Arguments for generator task net
+generator_task_net:
+  g_ckpt_dir: ./gan_ckpt_new_data/generator
+  task_net_ckpt_dir: ./gtn_pos1_modified
+  load_list: True
+  norm: batch
+  softlabel: True
+  label_noise: False
+  usel1: False
+  regular_scale: 0.0001
+  lr: 0.0001
+  lr_decay: True
+  max_train_steps: 210000
+  ckpt_to_keep: 21
+
+# Arguments for discriminator task net
+discriminator_task_net:
+  d_ckpt_dir: ./gan_ckpt/discriminator
+  task_net_ckpt_dir: ./test
+  norm: batch
+  dense_units: 100
+  softlabel: True
+  usel1: False
+  label_noise: True
+  regular_scale: 0.0001
+  lr: 0.001
+  lr_decay: True
+  max_train_steps: 500000
+  ckpt_to_keep: 10
+
+# Arguments for locgan
+locgan:
+  initial_gan: True
+  D_dir: ./gan_ckpt_origin_pos1_rescale/discriminator
+  G_dir: ./gan_ckpt_origin_pos1_rescale/generator
+  GT_dir:  ./gtn_pos1_for_locgan
+  ckpt_dir: ./locgan_ckpt_pos1
+  d_loss_weight: 100
+  gtn_loss_weight: 30
+  max_train_steps: 500000
+  ckpt_to_keep: 5

@@ -62,6 +62,7 @@ def prepare_dataset():
     dataset = dataset.batch(CONFIG['batch_size']).prefetch(1)
     test_dataset = test_dataset.batch(CONFIG['batch_size']).prefetch(1)
 
+    # create handle of two datasets
     handle = tf.placeholder(tf.string, shape=[], name='iterator_handle')
     iterator = tf.data.Iterator.from_string_handle(handle, dataset.output_types, dataset.output_shapes)
     one_batch = iterator.get_next()
@@ -118,14 +119,14 @@ def train_generator():
         with tf.name_scope('input_pipeline'):
             # prepare dataset
             handle, one_batch, train_init, test_init = prepare_dataset()
+    # is_training is a indicator for batch normalization.
     is_training = tf.placeholder(dtype=tf.bool, shape=[], name='is_training')
 
     # initialize a generator
     generator = Generator(bottleneck=g_config['bottleneck'], concat_cond=g_config['concat_cond'],
                           regular_scale=g_config['regular_scale'], is_training=is_training)
     # build generator network
-    raw_gridmap = generator(inputs=one_batch['image'], version=g_config['resnet_version'],
-                            epsilon=1e-5, momentum=0.99, reuse=False)
+    raw_gridmap = generator(inputs=one_batch['image'], epsilon=1e-5, momentum=0.99, reuse=False)
 
     # record images
     with tf.name_scope('images'):
@@ -140,8 +141,7 @@ def train_generator():
         learning_rate = learning_rate_fn(decay=g_config['lr_decay'], lr=g_config['lr'],
                                          step=generator.step, max_steps=g_config['max_train_steps'])
 
-    loss = gridmap2gridmap_loss(gridmap=one_batch['gridmap'], gridmap_=raw_gridmap,
-                                pos_weight=g_config['pos_weight'])
+    loss = gridmap2gridmap_loss(gridmap=one_batch['gridmap'], gridmap_= raw_gridmap)
     train_op = generator.optimizer(lr=lr, loss=loss)
 
     saver = tf.train.Saver(max_to_keep=g_config['ckpt_to_keep'],

@@ -21,34 +21,6 @@ def resnet_generator_v1(inputs, regul, is_training, concat_cond, init, channel, 
             ein = tf.concat([ein, cond], axis=-1)
         return ein
 
-    # def _conv_and_compress(ein, filters, name):
-    #     if concat_cond:
-    #         cond = tf.image.resize_bilinear(images=inputs, size=ein.shape.as_list()[1:3])
-    #         ein = tf.concat([ein, cond], axis=-1)
-    #
-    #     ein = tf.layers.conv2d(inputs=ein, filters=filters, kernel_size=3, strides=2,
-    #                            padding="same", activation=None,
-    #                            use_bias=True, kernel_initializer=init,
-    #                            kernel_regularizer=regul, bias_regularizer=regul, name=name + "_0")
-    #
-    #     ein = tf.layers.conv2d(inputs=ein, filters=filters, kernel_size=3, strides=1,
-    #                            padding="same", activation=None,
-    #                            use_bias=True, kernel_initializer=init,
-    #                            kernel_regularizer=regul, bias_regularizer=regul, name=name + "_1")
-    #     # var_list = tf.trainable_variables("sae/encoder/" + name + "_1")
-    #     # tf.summary.histogram(name=name + "_1/weights", values=var_list[0])
-    #     # tf.summary.histogram(name=name + "_1/bias", values=var_list[1])
-    #     # tf.summary.histogram(name=name + "_1/activations", values=ein)
-    #
-    #     ein = tf.layers.batch_normalization(inputs=ein, momentum=momentum, epsilon=epsilon,
-    #                                         training=is_training, name=name + '_bn')
-    #     var_list = tf.trainable_variables("sae/encoder/" + name + "_bn")
-    #     tf.summary.histogram(name=name + "_bn_gamma", values=var_list[0])
-    #     tf.summary.histogram(name=name + "_bn_beta", values=var_list[1])
-    #     tf.summary.histogram(name=name + "_bn/output", values=ein)
-    #
-    #     return en_activation(ein)
-
     with tf.variable_scope('encoder'):
         inputs = tf.concat([inputs], axis=-1)
 
@@ -58,9 +30,6 @@ def resnet_generator_v1(inputs, regul, is_training, concat_cond, init, channel, 
                               kernel_regularizer=regul,
                               bias_regularizer=regul,
                               name="conv7")
-        # var_list = tf.trainable_variables("sae/encoder/conv7")
-        # tf.summary.histogram(name="conv7/weights", values=var_list[0], collections=['train'])
-        # tf.summary.histogram(name="conv7/bias", values=var_list[1], collections=['train'])
 
         en = tf.layers.max_pooling2d(inputs=en, pool_size=3, strides=2, padding='same')
 
@@ -90,35 +59,6 @@ def resnet_generator_v1(inputs, regul, is_training, concat_cond, init, channel, 
         for i in range(5):
             en_16 = _res_building_block(inputs=en_16, filters=256, bottleneck=bottleneck,
                                         name='downsample3_building_block_' + str(i))
-
-    # def _conv_and_fracconv(ein, filters, name):
-    #     if concat_cond:
-    #         cond = tf.image.resize_bilinear(images=inputs, size=ein.shape.as_list()[1:3])
-    #         ein = tf.concat([ein, cond], axis=-1)
-    #
-    #     ein = tf.layers.conv2d_transpose(inputs=ein, filters=filters, kernel_size=3, strides=2,
-    #                                      padding="same", activation=None,
-    #                                      use_bias=True, kernel_initializer=init,
-    #                                      kernel_regularizer=regul, bias_regularizer=regul, name=name + "_0")
-    #
-    #     ein = tf.layers.conv2d(inputs=ein, filters=filters, kernel_size=3, strides=1,
-    #                            padding="same", activation=None,
-    #                            use_bias=True, kernel_initializer=init,
-    #                            kernel_regularizer=regul, bias_regularizer=regul, name=name + "_1")
-    #
-    #     # var_list = tf.trainable_variables("sae/decoder/" + name + "_1")
-    #     # tf.summary.histogram(name=name + "_1/weights", values=var_list[0])
-    #     # tf.summary.histogram(name=name + "_1/bias", values=var_list[1])
-    #     # tf.summary.histogram(name=name + "_1/activations", values=ein)
-    #
-    #     ein = tf.layers.batch_normalization(inputs=ein, momentum=momentum, epsilon=epsilon,
-    #                                         training=is_training, name=name + '_bn')
-    #     var_list = tf.trainable_variables("sae/decoder/" + name + "_bn")
-    #     tf.summary.histogram(name=name + "_bn_gamma", values=var_list[0])
-    #     tf.summary.histogram(name=name + "_bn_beta", values=var_list[1])
-    #     tf.summary.histogram(name=name + "_bn/output", values=ein)
-    #
-    #     return de_activation(ein)
 
     with tf.variable_scope('decoder'):
         _concat_cond(ein=en_16)
@@ -163,10 +103,17 @@ def resnet_generator_v1(inputs, regul, is_training, concat_cond, init, channel, 
 
 def resnet_generator_v2(inputs, regul, is_training, concat_cond, init, channel, en_activation, de_activation,
                         bottleneck, momentum=0.997, epsilon=1e-5, reuse=False):
+    '''
+    build up a resenet version 2 using the resnet building block.
+    '''
+
     _res_building_block = partial(res_building_block, is_training=is_training, regul=regul, init=init, version='v2',
                                   momentum=momentum, epsilon=epsilon)
 
     def _concat_cond(ein):
+        '''
+        concatenate the inputs to the intermiediate layers.
+        '''
         cond = None
         if concat_cond:
             cond = tf.image.resize_nearest_neighbor(images=inputs, size=ein.shape.as_list()[1:3])
@@ -191,9 +138,6 @@ def resnet_generator_v2(inputs, regul, is_training, concat_cond, init, channel, 
             tf.summary.histogram(name="encoder/conv7/output", values=en, collections=['train'])
 
         en_2 = tf.layers.max_pooling2d(inputs=en, pool_size=3, strides=2, padding='same')
-
-        # for i in range(2):
-        #     en = _res_building_block(inputs=en, filters=16, name='conv7_building_block_' + str(i))
 
         en_2, cond_2 = _concat_cond(ein=en_2)
         en_4 = _res_building_block(inputs=en_2, filters=32, stride=2, name='downsample0', up_down='down')
@@ -271,6 +215,9 @@ def resnet_generator_v2(inputs, regul, is_training, concat_cond, init, channel, 
 
 
 def make_cone(shape):
+    '''
+    create the distance map
+    '''
     mat = np.zeros(shape=shape, dtype=np.float32)
     rows, cols = shape
     for i in range(rows):

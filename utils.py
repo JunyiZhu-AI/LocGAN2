@@ -143,7 +143,6 @@ def data_augmentation(image_dict):
         right = left + c_scale
 
     ####################parameters for crop & rotation#########################
-
     # rotate images
     def rotate_images(image):
         with tf.name_scope('rotat_image'):
